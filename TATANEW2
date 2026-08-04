@@ -1,0 +1,83 @@
+-- โหลด Rayfield UI Library
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- สร้างหน้าต่าง UI
+local Window = Rayfield:CreateWindow({
+   Name = "Fast Auto Farm & Anti-AFK",
+   LoadingTitle = "Loading Script...",
+   LoadingSubtitle = "by Assistant",
+   ConfigurationSaving = {
+      Enabled = false
+   }
+})
+
+-- สร้าง Tab หลัก
+local MainTab = Window:CreateTab("Main", 4483362458)
+
+-- ตัวแปรควบคุมสถานะ
+local autoHarvest = false
+local antiAFK = false
+
+-- ===================================================
+-- ฟังก์ชั่นที่ 1: Fast Auto Harvest Tile (Hex_2_2)
+-- ===================================================
+MainTab:CreateToggle({
+   Name = "Fast Auto Harvest (Hex_2_2)",
+   CurrentValue = false,
+   Flag = "FastAutoHarvestFlag",
+   Callback = function(Value)
+      autoHarvest = Value
+      
+      if autoHarvest then
+         task.spawn(function()
+            local remote = game:GetService("ReplicatedStorage"):WaitForChild("shared/network@GlobalEvents"):WaitForChild("harvestLocalPlayerTile")
+            local args = { "Hex_2_2" }
+            
+            while autoHarvest do
+               remote:FireServer(unpack(args))
+               -- ใช้ task.wait() แบบไม่ใส่ค่าเพื่อความเร็วสูงสุดเท่าที่เอนจินเกมจะรันได้ต่อเฟรม (~60 FPS)
+               task.wait() 
+            end
+         end)
+      end
+   end,
+})
+
+-- ===================================================
+-- ฟังก์ชั่นที่ 2: Anti-AFK System
+-- ===================================================
+MainTab:CreateToggle({
+   Name = "Anti-AFK System",
+   CurrentValue = false,
+   Flag = "AntiAFKFlag",
+   Callback = function(Value)
+      antiAFK = Value
+      
+      if antiAFK then
+         task.spawn(function()
+            local VirtualUser = game:GetService("VirtualUser")
+            local Players = game:GetService("Players")
+            
+            -- ดักจับ event เมื่อตัวละครเริ่มถูกนับเวลา AFK
+            local connection
+            connection = Players.LocalPlayer.Idled:Connect(function()
+               if antiAFK then
+                  VirtualUser:CaptureController()
+                  VirtualUser:ClickButton2(Vector2.new())
+               else
+                  connection:Disconnect()
+               end
+            end)
+            
+            -- วนลูปคลิกหลอกในฉากหลังทุกๆ 2 นาที
+            while antiAFK do
+               task.wait(120)
+               if antiAFK then
+                  VirtualUser:CaptureController()
+                  VirtualUser:ClickButton2(Vector2.new())
+               end
+            end
+         end)
+      end
+   end,
+})
